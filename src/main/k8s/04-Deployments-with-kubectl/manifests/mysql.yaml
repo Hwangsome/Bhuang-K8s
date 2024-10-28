@@ -1,0 +1,39 @@
+# 1. MySQL Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:latest
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "root"  # 设置 root 用户密码
+          ports:
+            - containerPort: 3306
+              name: mysql
+
+---
+# 2. MySQL Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+spec:
+  selector:
+    app: mysql  # 选择标签为 app: mysql 的 Pod
+  ports:
+    - protocol: TCP
+      port: 3306        # Service 暴露的端口
+      targetPort: 3306  # Pod 中的 MySQL 端口
+  type: NodePort

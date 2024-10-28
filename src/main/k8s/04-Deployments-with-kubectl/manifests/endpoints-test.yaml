@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Endpoints
+metadata:
+#  这个名字需要和 service的名字一样才能冠梁上
+  name: external-service
+subsets:
+  - addresses:
+      - ip: 107.21.23.101  # 公网 IP 地址
+    ports:
+      - port: 80  # 假设外部资源监听的端口为 80
+        protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: external-service
+spec:
+  type: NodePort
+  ports:
+    - port: 80        # Service 暴露的端口
+      targetPort: 80  # 外部 IP 的端口（与 Endpoints 定义的端口匹配）
+      protocol: TCP
+

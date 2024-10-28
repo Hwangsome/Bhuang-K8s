@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: task-pv-volume
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+# hostPath 类型的 PersistentVolume。
+#  Kubernetes 支持用于在单节点集群上开发和测试的 hostPath 类型的 PersistentVolume。
+#  hostPath 类型的 PersistentVolume 使用节点上的文件或目录来模拟网络附加存储。
+  hostPath:
+#    指定卷位于集群节点上的 路径
+    path: "/Users/bhuang/code/Bhuang-k8s/src/main/k8s/04-Deployments-with-kubectl/manifests"

@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pv-nginx-pod
+  labels:
+    app: nginx
+spec:
+#  tolerations:
+#    -
+  #  affinity:
+#    nodeAffinity:
+#      preferredDuringSchedulingIgnoredDuringExecution:
+#        - preference:
+#            matchExpressions:
+#              - ""
+#            matchFields:
+#              - key:
+#
+#          weight:
+  restartPolicy: Always
+  containers:
+    - name: nginx
+      image: nginx:1.21.6-alpine   # 使用 Nginx 官方镜像
+      imagePullPolicy: Always
+      ports:
+        - containerPort: 80   # 暴露 Nginx 服务器的 80 端口
+      volumeMounts:
+        - mountPath: "/usr/share/nginx/html"
+          name: task-pv-storage
+  volumes:
+    - name: task-pv-storage
+      persistentVolumeClaim:
+        claimName: task-pv-claim
+
+
