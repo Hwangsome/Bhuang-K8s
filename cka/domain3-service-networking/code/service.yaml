@@ -1,0 +1,150 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.25.3
+        ports:
+        - containerPort: 80
+        env:
+        - name: BACKEND_SERVICE_HOST
+          value: backend-service
+        - name: BACKEND_SERVICE_PORT
+          value: "8080"
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d/
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: nginx-proxy-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-proxy-config
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name localhost;
+
+        # 添加根路径处理
+        location = / {
+            return 200 'Welcome to Frontend Service\n';
+            add_header Content-Type text/plain;
+        }
+
+        # API 路由配置
+        location /api {
+            # 移除 /api 前缀
+            rewrite ^/api/?(.*)$ /$1 break;
+            proxy_pass http://backend-service:8080;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+
+            # 添加调试信息
+            add_header X-Debug-Original-URI $request_uri;
+            add_header X-Debug-Rewritten-URI $uri;
+        }
+    }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+spec:
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: 80
+    nodePort: 31914
+    protocol: TCP
+  selector:
+    app: frontend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    app: backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: python:3.9-slim
+        ports:
+        - containerPort: 8080
+        command: ["/bin/bash"]
+        args:
+          - "-c"
+          - |
+            cat > /app/server.py << 'EOF'
+            from http.server import HTTPServer, BaseHTTPRequestHandler
+            import json
+
+            class Handler(BaseHTTPRequestHandler):
+                def do_GET(self):
+                    self.send_response(200)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                    
+                    response = {
+                        'message': 'Hello from Backend Service!',
+                        'path': self.path,
+                        'headers': dict(self.headers),
+                        'client_address': self.client_address[0]
+                    }
+                    
+                    self.wfile.write(json.dumps(response, indent=2).encode())
+
+            print("Backend server starting on port 8080...")
+            server = HTTPServer(('', 8080), Handler)
+            server.serve_forever()
+            EOF
+            python /app/server.py
+        workingDir: /app
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    app: backend

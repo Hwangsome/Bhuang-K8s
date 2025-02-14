@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox-pod
+  labels:
+    app: busybox
+spec:
+  containers:
+  - name: busybox
+    image: busybox:latest
+    # 容器启动后，开始一个无限循环
+    # 每次循环打印一条消息 "Hello from busybox"
+    # 然后等待 10 秒
+    # 重复这个过程
+    command:
+    - sh
+    - -c
+    - while true; do echo Hello from busybox; sleep 10; done
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "100m"
+      limits:
+        memory: "128Mi"
+        cpu: "200m"

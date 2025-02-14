@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+    environment: production
+spec:
+  # 定义副本数量
+  replicas: 3
+  # 定义部署策略
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # 最多可以超出期望的Pod数量
+      maxUnavailable: 1  # 最多可以有多少Pod不可用
+  # 选择器
+  selector:
+    matchLabels:
+      app: nginx
+  # Pod 模板
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.25.3
+        ports:
+        - containerPort: 80
+        # 资源限制
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+        # 存活探针
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        # 就绪探针
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        # 环境变量
+        env:
+        - name: NGINX_HOST
+          value: example.com
+        - name: NGINX_PORT
+          value: "80"
+        # 挂载配置文件
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d
+      # 定义数据卷
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: nginx-config  # 需要预先创建这个 ConfigMap
+
+# # 1. 首先创建 ConfigMap
+# kubectl apply -f code/nginx-config.yaml
+
+# 2. 然后部署 Deployment
+# kubectl apply -f code/deployment-demo.yaml
+
+# 查看 Deployment 状态
+# kubectl get deployment nginx-deployment
+
+# 查看 Pod 状态
+# kubectl get pods -l app=nginx
+
+# 查看部署历史
+# kubectl rollout history deployment nginx-deployment
+
+# 这个 Deployment 配置提供了以下特性：
+# 自动滚动更新
+# 健康检查
+# 资源限制
+# 配置管理
+# 环境变量注入
