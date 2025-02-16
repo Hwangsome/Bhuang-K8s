@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # 1. 使用命名卷的 Web 服务
+  web:
+    image: nginx:1.25.3
+    volumes:
+      - web_data:/usr/share/nginx/html  # 命名卷
+      - ./config:/etc/nginx/conf.d      # 绑定挂载
+    ports:
+      - "8080:80"
+
+  # 2. 使用多个卷的数据库服务
+  db:
+    image: mysql:8.0
+    volumes:
+      - db_data:/var/lib/mysql         # 持久化数据
+      - ./mysql/init:/docker-entrypoint-initdb.d  # 初始化脚本
+      - ./mysql/conf:/etc/mysql/conf.d  # 配置文件
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+      MYSQL_DATABASE: testdb
+      MYSQL_USER: testuser
+      MYSQL_PASSWORD: testpass
+    ports:
+      - "3306:3306"
+
+  # 3. 使用临时卷的测试服务
+  test:
+    image: alpine:latest
+    volumes:
+      - /tmp/test  # 临时卷
+    command: sh -c "while true; do sleep 30; done"
+
+volumes:
+  # 定义命名卷
+  web_data:
+    name: web_data_volume
+  db_data:
+    name: db_data_volume
