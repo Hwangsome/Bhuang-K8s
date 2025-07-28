@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: fleetman-webapp-service
+  labels:
+    app: fleetman-webapp
+    tier: frontend
+spec:
+  # Service type - ClusterIP for internal access, NodePort for external access
+  type: NodePort
+  # Port configuration
+  ports:
+  - name: http
+    port: 80        # Service port
+    targetPort: http # Container port (named port)
+    protocol: TCP
+    nodePort: 30080  # External port (30000-32767 range)
+  # Selector to match pods
+  selector:
+    app: fleetman-webapp
+    tier: frontend
+#  # Session affinity - ensures same client goes to same pod
+#  sessionAffinity: ClientIP
+#  sessionAffinityConfig:
+#    clientIP:
+#      timeoutSeconds: 10800  # 3 hours

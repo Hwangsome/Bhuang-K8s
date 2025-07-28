@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: fleetman-webapp-rs
+  labels:
+    app: fleetman-webapp
+    tier: frontend
+    release: stable
+spec:
+  # Number of desired pods
+  replicas: 3
+  selector:
+    # Pods must have these labels to be managed by this ReplicaSet
+    matchLabels:
+      app: fleetman-webapp
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        app: fleetman-webapp
+        tier: frontend
+        version: release0
+    spec:
+      containers:
+      - name: webapp
+        image: richardchesterwood/k8s-fleetman-webapp-angular:release0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP
+        # Resource limits and requests
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        # Liveness probe to check if container is alive
+        livenessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        # Readiness probe to check if container is ready to serve traffic
+        readinessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        # Environment variables
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: LOG_LEVEL
+          value: "info"
