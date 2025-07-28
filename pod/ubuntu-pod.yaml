@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ubuntu-pod
+  labels:
+    app: ubuntu
+spec:
+  containers:
+  - name: ubuntu-container
+    image: ubuntu:latest
+    # Keep the container running
+    command: ["sleep", "infinity"]
+    # Resource limits and requests
+    resources:
+      limits:
+        memory: "128Mi"
+        cpu: "500m"
+      requests:
+        memory: "64Mi"
+        cpu: "250m"
+    # Environment variables
+    env:
+    - name: DEBIAN_FRONTEND
+      value: "noninteractive"
+    # Volume mounts if needed
+    volumeMounts:
+    - name: workdir
+      mountPath: /workspace
+  # Restart policy
+  restartPolicy: Always
+  # Volumes
+  volumes:
+  - name: workdir
+    emptyDir: {}

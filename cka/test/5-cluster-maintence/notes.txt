@@ -1,0 +1,23 @@
+k8s 集群升级
+https://v1-30.docs.kubernetes.io/blog/2023/08/15/pkgs-k8s-io-introduction/
+
+```shell
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+```
+
+```shell
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+```
+
+```shell
+sudo apt-get update
+
+```
+
+https://v1-30.docs.kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-upgrade/
+```shell
+# Find the latest 1.30 version in the list.
+# It should look like 1.30.x-*, where x is the latest patch.
+sudo apt update
+sudo apt-cache madison kubeadm
+```

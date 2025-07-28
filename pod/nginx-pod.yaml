@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-pod
+  labels:
+    app: nginx
+    environment: development
+spec:
+  containers:
+  - name: nginx
+    image: nginx:latest
+    ports:
+    - containerPort: 80
+      name: http
+      protocol: TCP
+    # Resource limits and requests
+    resources:
+      limits:
+        memory: "256Mi"
+        cpu: "500m"
+      requests:
+        memory: "128Mi"
+        cpu: "250m"
+    # Liveness probe to check if nginx is running
+    livenessProbe:
+      httpGet:
+        path: /
+        port: 80
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    # Readiness probe to check if nginx is ready to serve traffic
+    readinessProbe:
+      httpGet:
+        path: /
+        port: 80
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 3
+      successThreshold: 1
+      failureThreshold: 3
+    # Environment variables
+    env:
+    - name: NGINX_HOST
+      value: "localhost"
+    - name: NGINX_PORT
+      value: "80"
+    # Volume mounts
+    volumeMounts:
+    - name: nginx-config
+      mountPath: /etc/nginx/conf.d
+    - name: nginx-logs
+      mountPath: /var/log/nginx
+  # Restart policy
+  restartPolicy: Always
+  # Volumes
+  volumes:
+  - name: nginx-config
+    emptyDir: {}
+  - name: nginx-logs
+    emptyDir: {}
