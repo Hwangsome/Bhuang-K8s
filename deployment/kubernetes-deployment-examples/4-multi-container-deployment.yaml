@@ -1,0 +1,117 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fleetman-webapp-multi-container
+  labels:
+    app: fleetman-webapp
+    version: multi-container
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: fleetman-webapp
+      version: multi-container
+  template:
+    metadata:
+      labels:
+        app: fleetman-webapp
+        version: multi-container
+    spec:
+      containers:
+      # Main application container
+      - name: webapp
+        image: richardchesterwood/k8s-fleetman-webapp-angular:release0
+        ports:
+        - containerPort: 80
+          name: http
+        volumeMounts:
+        - name: shared-logs
+          mountPath: /var/log/webapp
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d
+        env:
+        - name: LOG_LEVEL
+          value: "info"
+        - name: APP_ENV
+          value: "production"
+      
+      # Sidecar container for log aggregation
+      - name: log-aggregator
+        image: busybox:1.35
+        command: ['sh', '-c']
+        args:
+        - |
+          echo "Starting log aggregator..."
+          while true; do
+            if [ -d /var/log/webapp ]; then
+              echo "$(date) - Processing logs..."
+              # Simulate log processing
+              find /var/log/webapp -name "*.log" -mtime +1 -exec rm {} \;
+            fi
+            sleep 60
+          done
+        volumeMounts:
+        - name: shared-logs
+          mountPath: /var/log/webapp
+      
+      # Sidecar container for metrics collection
+      - name: metrics-exporter
+        image: prom/node-exporter:v1.5.0
+        ports:
+        - containerPort: 9100
+          name: metrics
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+      
+      # Init container to setup configuration
+      initContainers:
+      - name: config-init
+        image: busybox:1.35
+        command: ['sh', '-c']
+        args:
+        - |
+          echo "Initializing configuration..."
+          cat > /etc/nginx/custom.conf << EOF
+          server {
+              listen 80;
+              location /health {
+                  access_log off;
+                  return 200 "healthy\n";
+                  add_header Content-Type text/plain;
+              }
+          }
+          EOF
+          echo "Configuration initialized"
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx
+      
+      volumes:
+      - name: shared-logs
+        emptyDir: {}
+      - name: nginx-config
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fleetman-webapp-multi-service
+spec:
+  selector:
+    app: fleetman-webapp
+    version: multi-container
+  ports:
+  - name: webapp
+    port: 80
+    targetPort: 80
+    protocol: TCP
+  - name: metrics
+    port: 9100
+    targetPort: 9100
+    protocol: TCP
+  type: ClusterIP

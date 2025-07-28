@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fleetman-webapp-rolling
+  labels:
+    app: fleetman-webapp
+    version: rolling
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      app: fleetman-webapp
+      version: rolling
+  # Rolling update strategy configuration
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 2        # Maximum number of pods that can be created above the desired replica count
+      maxUnavailable: 1  # Maximum number of pods that can be unavailable during the update
+  minReadySeconds: 10    # Minimum seconds a pod must be ready before considered available
+  progressDeadlineSeconds: 600  # Maximum time in seconds for a deployment to make progress
+  template:
+    metadata:
+      labels:
+        app: fleetman-webapp
+        version: rolling
+    spec:
+      containers:
+      - name: webapp
+        image: richardchesterwood/k8s-fleetman-webapp-angular:release0
+        ports:
+        - containerPort: 80
+          name: http
+        # Readiness probe for rolling update
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        # Liveness probe
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fleetman-webapp-rolling-service
+spec:
+  selector:
+    app: fleetman-webapp
+    version: rolling
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  type: LoadBalancer

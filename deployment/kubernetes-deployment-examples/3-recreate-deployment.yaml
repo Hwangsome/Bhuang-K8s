@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fleetman-webapp-recreate
+  labels:
+    app: fleetman-webapp
+    version: recreate
+  annotations:
+    description: "This deployment uses Recreate strategy - all pods are terminated before new ones are created"
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: fleetman-webapp
+      version: recreate
+  # Recreate strategy - all existing pods are killed before new ones are created
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: fleetman-webapp
+        version: recreate
+    spec:
+      # Grace period for pod termination
+      terminationGracePeriodSeconds: 30
+      containers:
+      - name: webapp
+        image: richardchesterwood/k8s-fleetman-webapp-angular:release0
+        ports:
+        - containerPort: 80
+          name: http
+        # Environment variables for database-like scenarios
+        env:
+        - name: APP_MODE
+          value: "production"
+        - name: SCHEMA_VERSION
+          value: "v1.0"
+        - name: MAINTENANCE_MODE
+          value: "false"
+        # Lifecycle hooks for graceful shutdown
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 15"]
+        # Volume mounts for persistent data
+        volumeMounts:
+        - name: data-volume
+          mountPath: /var/data
+      volumes:
+      - name: data-volume
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fleetman-webapp-recreate-service
+spec:
+  selector:
+    app: fleetman-webapp
+    version: recreate
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  type: ClusterIP
