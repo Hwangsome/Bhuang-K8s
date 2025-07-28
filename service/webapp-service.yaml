@@ -6,6 +6,7 @@ spec:
   # Service will route traffic to Pods with labels matching the selector
   selector:
     app: webapp
+    version: "0-5"
   ports:
   - name: http
     port: 80        # Service port
