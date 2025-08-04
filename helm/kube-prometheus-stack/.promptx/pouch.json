@@ -1,0 +1,36 @@
+{
+  "currentState": "initialized",
+  "stateHistory": [
+    {
+      "from": "initial",
+      "command": "init",
+      "timestamp": "2025-08-01T10:20:06.522Z",
+      "args": [
+        {
+          "workingDirectory": "."
+        }
+      ]
+    },
+    {
+      "from": "initialized",
+      "command": "init",
+      "timestamp": "2025-08-01T14:58:06.506Z",
+      "args": [
+        {
+          "workingDirectory": "."
+        }
+      ]
+    },
+    {
+      "from": "initialized",
+      "command": "init",
+      "timestamp": "2025-08-01T14:59:33.264Z",
+      "args": [
+        {
+          "workingDirectory": "/Users/bhuang/code/Bhuang-k8s/helm/kube-prometheus-stack"
+        }
+      ]
+    }
+  ],
+  "lastUpdated": "2025-08-01T14:59:33.324Z"
+}

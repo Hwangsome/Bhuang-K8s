@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fleetman-webapp
+  labels:
+    app: fleetman-webapp
+    tier: frontend
+    release: stable
+spec:
+  minReadySeconds: 30
+  # Number of desired pods
+  replicas: 3
+  # Deployment strategy
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  # Revision history limit
+  revisionHistoryLimit: 10
+  selector:
+    # Pods must have these labels to be managed by this Deployment
+    matchLabels:
+      app: fleetman-webapp
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        app: fleetman-webapp
+        tier: frontend
+        version: release0
+    spec:
+      containers:
+      - name: webapp
+        image: richardchesterwood/k8s-fleetman-webapp-angular:release0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP

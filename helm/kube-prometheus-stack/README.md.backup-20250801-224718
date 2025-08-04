@@ -1,0 +1,324 @@
+# Kube-Prometheus-Stack Helm Chart 使用指南
+
+本文档记录了 `prometheus-community/kube-prometheus-stack` Helm Chart 的常用操作。
+
+## Chart 信息说明
+
+`prometheus-community/kube-prometheus-stack` 格式说明：
+- **prometheus-community**: Helm 仓库名称
+- **kube-prometheus-stack**: Chart 名称
+
+## 前置准备
+
+### 1. 添加 Helm 仓库
+
+```bash
+# Add the prometheus-community repository
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+
+# Update the repository list
+helm repo update
+```
+
+### 2. 查看已添加的仓库
+
+```bash
+# List all configured repositories
+helm repo list
+```
+
+## 常用操作
+
+### 1. 查看 Chart 信息
+
+#### 查看 Chart 元数据
+```bash
+# Display chart metadata
+helm show chart prometheus-community/kube-prometheus-stack
+```
+
+#### 查看默认 values
+```bash
+# Show all default values
+helm show values prometheus-community/kube-prometheus-stack
+
+# Show first 50 lines of values (useful for large files)
+helm show values prometheus-community/kube-prometheus-stack | head -50
+
+# Save values to file for customization
+helm show values prometheus-community/kube-prometheus-stack > values-default.yaml
+```
+
+#### 查看 Chart README
+```bash
+# Display the chart's README
+helm show readme prometheus-community/kube-prometheus-stack
+```
+
+### 2. 搜索和查询
+
+#### 搜索仓库中的 Charts
+```bash
+# Search all charts in prometheus-community repository
+helm search repo prometheus-community
+
+# Search for specific chart
+helm search repo prometheus-community/kube-prometheus-stack
+
+# Show all versions of a chart
+helm search repo prometheus-community/kube-prometheus-stack --versions
+```
+
+### 3. 安装和管理
+
+#### 基础安装
+```bash
+# Install with default values
+helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --create-namespace
+
+# Install with custom values file
+helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --create-namespace \
+  --values values.yaml
+```
+
+#### 查看已安装的 Releases
+```bash
+# List releases in current namespace
+helm list
+
+# List releases in all namespaces
+helm list -A
+
+# List releases in specific namespace
+helm list -n monitoring
+```
+
+## 使用本地 values 文件进行升级
+
+在进行版本升级时，有时需要自定义参数配置，此时便可使用本地的 values 文件。通过提供自定义的 values 文件，可以更加灵活地控制升级过程中的配置，确保符合特定的部署需求。
+
+### 升级前的检查步骤
+
+在执行 Helm 升级操作之前，建议进行以下检查步骤以确保升级的安全性和成功率：
+
+#### 1. 检查当前 Release 状态
+
+首先确认当前 release 的运行状态是否正常：
+
+```bash
+# Check the current release status
+helm status kube-prometheus-stack -n monitoring
+
+# View the release history to understand previous upgrades
+helm history kube-prometheus-stack -n monitoring
+
+# Get detailed information about the current release
+helm get all kube-prometheus-stack -n monitoring
+```
+
+#### 2. 备份当前配置
+
+在升级前备份当前的配置是最佳实践，以便在需要时能够回滚：
+
+```bash
+# Backup current values
+helm get values kube-prometheus-stack -n monitoring > values-backup-$(date +%Y%m%d-%H%M%S).yaml
+
+# Backup the complete release manifest
+helm get manifest kube-prometheus-stack -n monitoring > manifest-backup-$(date +%Y%m%d-%H%M%S).yaml
+
+# Optional: Backup all release information
+helm get all kube-prometheus-stack -n monitoring > release-backup-$(date +%Y%m%d-%H%M%S).yaml
+```
+
+#### 3. 比较新旧 Values 文件差异
+
+了解新版本与当前版本的配置差异对于评估升级影响至关重要：
+
+```bash
+# Get current values
+helm get values kube-prometheus-stack -n monitoring > current-values.yaml
+
+# Get default values of the new version
+helm show values prometheus-community/kube-prometheus-stack --version <NEW_VERSION> > new-default-values.yaml
+
+# Compare the differences
+diff -u current-values.yaml new-default-values.yaml
+
+# Or use a more visual diff tool if available
+# vimdiff current-values.yaml new-default-values.yaml
+# code --diff current-values.yaml new-default-values.yaml
+```
+
+#### 4. 验证 Values 文件语法
+
+确保自定义的 values 文件语法正确，避免因配置错误导致升级失败：
+
+```bash
+# Validate YAML syntax
+yamllint values.yaml
+
+# Or use yq for validation
+yq eval '.' values.yaml > /dev/null && echo "YAML syntax is valid"
+
+# Perform a dry-run to check for configuration errors
+helm upgrade kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --values values.yaml \
+  --dry-run \
+  --debug
+
+# Use helm lint to check chart and values compatibility
+helm lint prometheus-community/kube-prometheus-stack --values values.yaml
+```
+
+完成以上检查步骤后，您可以更有信心地进行实际的升级操作。
+
+#### 升级 Release
+```bash
+# Upgrade to latest version
+helm upgrade kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+  --namespace monitoring
+
+# Upgrade to specific version
+helm upgrade kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --version 61.3.1
+```
+
+#### 卸载 Release
+```bash
+# Uninstall the release
+helm uninstall kube-prometheus-stack --namespace monitoring
+```
+
+### 升级命令示例
+
+以下是一些常用的 Helm 升级命令示例，使用您提供的参数:
+
+1. **基本升级命令（使用本地 values-default.yaml）**
+
+```bash
+helm upgrade kube-monitor prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --values /Users/bhuang/code/Bhuang-k8s/helm/kube-prometheus-stack/values-default.yaml
+```
+
+2. **指定版本号的升级命令**
+
+```bash
+helm upgrade kube-monitor prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --version 61.3.1 \
+  --values /Users/bhuang/code/Bhuang-k8s/helm/kube-prometheus-stack/values-default.yaml
+```
+
+3. **结合多个 values 文件的升级命令**
+
+```bash
+helm upgrade kube-monitor prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --values /Users/bhuang/code/Bhuang-k8s/helm/kube-prometheus-stack/values-default.yaml \
+  --values additional-values.yaml
+```
+
+4. **使用 --reuse-values 的升级命令**
+
+```bash
+helm upgrade kube-monitor prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --reuse-values
+```
+### 4. 高级用法
+
+#### 查看特定版本的 values
+```bash
+# Show values for a specific version
+helm show values prometheus-community/kube-prometheus-stack --version 61.3.1
+```
+
+#### 生成 Kubernetes 清单文件（不安装）
+```bash
+# Generate manifests without installing
+helm template kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --values values.yaml > manifests.yaml
+```
+
+#### 验证 Chart
+```bash
+# Lint the chart
+helm lint prometheus-community/kube-prometheus-stack
+
+# Dry run installation
+helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --dry-run \
+  --debug
+```
+
+## 自定义配置示例
+
+创建一个 `values.yaml` 文件来自定义配置：
+
+```yaml
+# Example custom values for kube-prometheus-stack
+grafana:
+  enabled: true
+  adminPassword: "your-secure-password"
+  ingress:
+    enabled: true
+    hosts:
+      - grafana.example.com
+
+prometheus:
+  prometheusSpec:
+    retention: 30d
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 50Gi
+
+alertmanager:
+  alertmanagerSpec:
+    storage:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+```
+
+## 故障排查
+
+### 查看 Release 状态
+```bash
+# Get release status
+helm status kube-prometheus-stack -n monitoring
+
+# Get release history
+helm history kube-prometheus-stack -n monitoring
+```
+
+### 回滚到之前的版本
+```bash
+# Rollback to previous version
+helm rollback kube-prometheus-stack -n monitoring
+
+# Rollback to specific revision
+helm rollback kube-prometheus-stack 2 -n monitoring
+```
+
+## 参考链接
+
+- [Prometheus Community Helm Charts](https://github.com/prometheus-community/helm-charts)
+- [Kube-Prometheus-Stack Documentation](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)
+- [Prometheus Operator](https://github.com/prometheus-operator/prometheus-operator)

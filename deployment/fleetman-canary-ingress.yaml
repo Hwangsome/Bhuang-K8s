@@ -1,0 +1,173 @@
+# Fleetman Canary Deployment with Nginx Ingress
+# This example shows advanced canary deployment using Nginx Ingress annotations
+
+---
+# Stable version deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fleetman-webapp-stable
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: fleetman-webapp
+      version: stable
+  template:
+    metadata:
+      labels:
+        app: fleetman-webapp
+        version: stable
+    spec:
+      containers:
+      - name: fleetman-webapp
+        image: richardchesterwood/k8s-fleetman-webapp-angular:release0
+        ports:
+        - containerPort: 80
+
+---
+# Canary version deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fleetman-webapp-canary
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fleetman-webapp
+      version: canary
+  template:
+    metadata:
+      labels:
+        app: fleetman-webapp
+        version: canary
+    spec:
+      containers:
+      - name: fleetman-webapp
+        image: richardchesterwood/k8s-fleetman-webapp-angular:release0-5
+        ports:
+        - containerPort: 80
+
+---
+# Service for stable version
+apiVersion: v1
+kind: Service
+metadata:
+  name: fleetman-webapp-stable
+spec:
+  selector:
+    app: fleetman-webapp
+    version: stable
+  ports:
+  - port: 80
+    targetPort: 80
+
+---
+# Service for canary version
+apiVersion: v1
+kind: Service
+metadata:
+  name: fleetman-webapp-canary
+spec:
+  selector:
+    app: fleetman-webapp
+    version: canary
+  ports:
+  - port: 80
+    targetPort: 80
+
+---
+# Main Ingress for stable version
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fleetman-webapp-stable
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: fleetman.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: fleetman-webapp-stable
+            port:
+              number: 80
+
+---
+# Canary Ingress - 10% traffic split
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fleetman-webapp-canary-weight
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/canary: "true"
+    nginx.ingress.kubernetes.io/canary-weight: "10"  # 10% of traffic
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: fleetman.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: fleetman-webapp-canary
+            port:
+              number: 80
+
+---
+# Canary Ingress - Header-based routing (for testing)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fleetman-webapp-canary-header
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/canary: "true"
+    nginx.ingress.kubernetes.io/canary-by-header: "x-canary"
+    nginx.ingress.kubernetes.io/canary-by-header-value: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: fleetman.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: fleetman-webapp-canary
+            port:
+              number: 80
+
+---
+# Canary Ingress - Cookie-based routing (for testing)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fleetman-webapp-canary-cookie
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/canary: "true"
+    nginx.ingress.kubernetes.io/canary-by-cookie: "canary"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: fleetman.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: fleetman-webapp-canary
+            port:
+              number: 80

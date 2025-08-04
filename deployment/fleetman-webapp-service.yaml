@@ -24,3 +24,8 @@ spec:
 #  sessionAffinityConfig:
 #    clientIP:
 #      timeoutSeconds: 10800  # 3 hours
+
+
+  mysql-service             ClusterIP   10.107.76.232
+  
+  kube-dns   ClusterIP   10.96.0.10   <none>        53/UDP,53/TCP,9153/TCP   163d

@@ -1,0 +1,52 @@
+# Deployment configuration for MySQL Pod
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mysql-pod
+  labels:
+    app: mysql
+    tier: database
+spec:
+  containers:
+  - name: mysql
+    image: mysql/mysql-server:8.0.23
+    imagePullPolicy: IfNotPresent
+    ports:
+    - containerPort: 3306
+      name: mysql
+    env:
+    # Environment variables for MySQL configuration
+    - name: MYSQL_ROOT_PASSWORD
+      value: "rootpassword"
+    - name: MYSQL_DATABASE
+      value: "testdb"
+    - name: MYSQL_USER
+      value: "testuser"
+    - name: MYSQL_PASSWORD
+      value: "testpassword"
+    volumeMounts:
+    - name: mysql-storage
+      mountPath: /var/lib/mysql
+  volumes:
+  - name: mysql-storage
+    emptyDir: {}
+
+---
+# Service configuration for MySQL
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+  labels:
+    app: mysql
+    tier: database
+spec:
+  type: ClusterIP
+  selector:
+    app: mysql
+    tier: database
+  ports:
+    - port: 3306
+      targetPort: 3306
+      protocol: TCP
+      name: mysql

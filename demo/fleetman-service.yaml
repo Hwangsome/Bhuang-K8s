@@ -1,0 +1,51 @@
+# Service that routes traffic to both versions
+apiVersion: v1
+kind: Service
+metadata:
+  name: fleetman-webapp
+spec:
+  selector:
+    app: fleetman-webapp  # Matches both stable and canary
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+      nodePort: 30080
+  type: NodePort
+
+
+---
+
+# Service that routes traffic to both versions
+apiVersion: v1
+kind: Service
+metadata:
+  name: fleetman-queue
+spec:
+  selector:
+    app: fleetman-queue  # Matches both stable and canary
+  ports:
+    - name: http
+      port: 8161
+      nodePort: 30010  # Optional: for external access
+    - name: endpoint
+      port: 61616
+  type: NodePort
+
+---
+
+# Service that routes traffic to both versions
+apiVersion: v1
+kind: Service
+metadata:
+  name: fleetman-api-gateway
+spec:
+  selector:
+    app: fleetman-api-gateway  # Matches both stable and canary
+  ports:
+    - name: http
+      port: 8080
+      nodePort: 30020  # Optional: for external access
+  type: NodePort
+
+
